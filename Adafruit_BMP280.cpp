@@ -270,6 +270,33 @@ float Adafruit_BMP280::readTemperature() {
 }
 
 /*!
+ * Calculates the temperature from the data measured from the device.
+ * @param adc_T
+ *        The temperature data read from the sensor.
+ * @return The temperature in degrees celsius.
+ */
+float Adafruit_BMP280::calculateTemperature(int32_t adc_T) {
+  int32_t var1, var2;
+  if (!_sensorID)
+    return NAN; // begin() not called yet
+  
+  var1 = ((((adc_T >> 3) - ((int32_t)_bmp280_calib.dig_T1 << 1))) *
+          ((int32_t)_bmp280_calib.dig_T2)) >>
+         11;
+
+  var2 = (((((adc_T >> 4) - ((int32_t)_bmp280_calib.dig_T1)) *
+            ((adc_T >> 4) - ((int32_t)_bmp280_calib.dig_T1))) >>
+           12) *
+          ((int32_t)_bmp280_calib.dig_T3)) >>
+         14;
+
+  t_fine = var1 + var2;
+
+  float T = (t_fine * 5 + 128) >> 8;
+  return T / 100;
+}
+
+/*!
  * Reads the barometric pressure from the device.
  * @return Barometric pressure in Pa.
  */
@@ -284,6 +311,39 @@ float Adafruit_BMP280::readPressure() {
   int32_t adc_P = read24(BMP280_REGISTER_PRESSUREDATA);
   adc_P >>= 4;
 
+  var1 = ((int64_t)t_fine) - 128000;
+  var2 = var1 * var1 * (int64_t)_bmp280_calib.dig_P6;
+  var2 = var2 + ((var1 * (int64_t)_bmp280_calib.dig_P5) << 17);
+  var2 = var2 + (((int64_t)_bmp280_calib.dig_P4) << 35);
+  var1 = ((var1 * var1 * (int64_t)_bmp280_calib.dig_P3) >> 8) +
+         ((var1 * (int64_t)_bmp280_calib.dig_P2) << 12);
+  var1 =
+      (((((int64_t)1) << 47) + var1)) * ((int64_t)_bmp280_calib.dig_P1) >> 33;
+
+  if (var1 == 0) {
+    return 0; // avoid exception caused by division by zero
+  }
+  p = 1048576 - adc_P;
+  p = (((p << 31) - var2) * 3125) / var1;
+  var1 = (((int64_t)_bmp280_calib.dig_P9) * (p >> 13) * (p >> 13)) >> 25;
+  var2 = (((int64_t)_bmp280_calib.dig_P8) * p) >> 19;
+
+  p = ((p + var1 + var2) >> 8) + (((int64_t)_bmp280_calib.dig_P7) << 4);
+  return (float)p / 256;
+}
+
+/*!
+ * Calculates the pressure from the data measured from the device.
+ * @param adc_P
+ *        The pressure data read from the sensor.
+ * @return Barometric pressure in Pa.
+ */
+float Adafruit_BMP280::calculatePressure(int32_t adc_P) {
+  int64_t var1, var2, p;
+  if (!_sensorID)
+    return NAN; // begin() not called yet
+
+  
   var1 = ((int64_t)t_fine) - 128000;
   var2 = var1 * var1 * (int64_t)_bmp280_calib.dig_P6;
   var2 = var2 + ((var1 * (int64_t)_bmp280_calib.dig_P5) << 17);
@@ -491,3 +551,5 @@ bool Adafruit_BMP280_Pressure::getEvent(sensors_event_t *event) {
   event->pressure = _theBMP280->readPressure() / 100; // convert Pa to hPa
   return true;
 }
+
+
