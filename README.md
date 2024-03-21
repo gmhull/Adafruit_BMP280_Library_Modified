@@ -4,6 +4,10 @@ This driver is for the [Adafruit BMP280 Breakout](http://www.adafruit.com/produc
 
 <a href="https://www.adafruit.com/product/2651"><img src="assets/board.jpg" width="500"/></a>
 
+## Modifications ##
+
+I am working on a drone flight controller that uses a BMP280 sensor. In order to keep the low cycle time on the flight controller, I needed to separate the reading and calculation steps in the library. This lets me read data on one cycle and then calculate the output on a subsequent cycle.
+
 ## About the BMP280 ##
 
 This precision sensor from Bosch is the best low-cost sensing solution for measuring barometric pressure and temperature. Because pressure changes with altitude you can also use it as an altimeter!
