@@ -191,6 +191,8 @@ public:
 
   float readTemperature();
   float readPressure(void);
+  float calculateTemperature(int32_t);
+  float calculatePressure(int32_t);
   float readAltitude(float seaLevelhPa = 1013.25);
   float seaLevelForAltitude(float altitude, float atmospheric);
   float waterBoilingPoint(float pressure);
